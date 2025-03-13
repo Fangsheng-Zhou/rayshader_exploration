@@ -1,0 +1,34 @@
+---
+title: "GEOG 595 Rayshader Examples by Jasper Zhou"
+output: html_notebook
+---
+
+**Let's check if the required packages are installed.**
+
+```{r}
+# Function to check and install rayshader if not installed
+check_install_rayshader <- function() {
+  if (!requireNamespace("rayshader", quietly = TRUE)) {
+    install.packages("rayshader", dependencies = TRUE, quiet = TRUE)
+  }
+}
+
+check_install_rayshader()
+```
+
+**Import the required libraries.**
+
+```{r}
+library(rayshader)
+```
+
+
+
+
+**Some cool things you can do with rayshader**
+1. https://opentopography.org/blog/creating-2d-and-3d-visualizations-rayshader
+2. https://rallydatajunkie.com/visualising-rally-stages/index.html
+
+**References**
+1. https://www.rayshader.com/
+

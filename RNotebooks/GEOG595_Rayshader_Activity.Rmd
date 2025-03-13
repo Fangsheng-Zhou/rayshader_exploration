@@ -1,0 +1,19 @@
+---
+title: "GEOG 595 Rayshader Activity by Jasper Zhou"
+output: html_notebook
+---
+
+**Let's check if the required packages are installed.**
+
+```{r}
+# Function to check and install rayshader if not installed
+check_install_rayshader <- function() {
+  if (!requireNamespace("rayshader", quietly = TRUE)) {
+    install.packages("rayshader", dependencies = TRUE, quiet = TRUE)
+  }
+}
+
+check_install_rayshader()
+```
+
+**Down sample the DEM**
