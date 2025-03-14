@@ -1,34 +1,101 @@
 ---
-title: "GEOG 595 Rayshader Examples by Jasper Zhou"
+title: "GEOG 595 rayshader Examples by Jasper Zhou"
 output: html_notebook
 ---
 
-**Let's check if the required packages are installed.**
-
+**Import the required libraries.**
 ```{r}
-# Function to check and install rayshader if not installed
-check_install_rayshader <- function() {
-  if (!requireNamespace("rayshader", quietly = TRUE)) {
-    install.packages("rayshader", dependencies = TRUE, quiet = TRUE)
-  }
-}
-
-check_install_rayshader()
+library(rayshader)
+library(terra)
+library(rgl)
 ```
 
-**Import the required libraries.**
-
+**Loading DEM**
 ```{r}
+# Download & Load the DEM from GitHub
+dem_url <- "https://github.com/Fangsheng-Zhou/rayshader_exploration/raw/refs/heads/main/Example_DEM_Data/USGS_13_n49w122_20230307_mtbaker.tif"
+dest_file <- "Data/mtbaker_dem.tif"
+
+# Download and save DEM
+download.file(dem_url, destfile = dest_file, mode = "wb")
+
+# Read the DEM as a raster
+mtbaker_dem <- rast(dest_file)
+
+# Plot the DEM as a grayscale image to verify
+plot(mtbaker_dem, main = "Mt Baker DEM")
+```
+
+**Downsize DEM for faster rendering**
+```{r}
+# Downsample DEM by a factor of 3 
+mtbaker_dem_downsampled <- aggregate(mtbaker_dem, fact = 3, fun = mean) 
+
+plot(mtbaker_dem_downsampled, main = "Mt Baker Downsampled DEM")
+```
+
+Note: you can compare the before and after DEM using res() or ncell().
+
+**Create a 2D plot of the DEM using rayshader.**
+```{r}
+# Convert to rayshader-compatible matrix
+elmat <- raster_to_matrix(mtbaker_dem_downsampled)
+
+# Apply shading and plot the 2D rayshader map
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  plot_map()
+```
+
+**How about adding some shadow?**
+```{r}
+# Apply texture and simple ray-traced shadows
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  add_shadow(ray_shade(elmat), 0.5) %>% # Adds realistic lighting effects
+  plot_map()
+```
+
+**How about plot it in 3D?**
+```{r}
+# Render in 3D 
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  add_shadow(ray_shade(elmat), 0.5) %>% # Adds realistic lighting effects
+  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 0.75, phi = 45, windowsize = c(1000, 800))
+
+# Pause briefly before taking a snapshot
+Sys.sleep(3)
+
+# Save a high-quality snapshot
+render_snapshot("Data/mtbaker_3D.png")
+```
+
+**Add water**
+```{r}
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  add_water(detect_water(elmat, cutoff = 0.3), color = "blue") %>%  # Adjust cutoff
+  add_shadow(ray_shade(elmat), 0.5) %>% 
+  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 0.75, phi = 45, windowsize = c(1000, 800))
+```
+
+**2D vs. 3D plots, side by side comparison**
+```{r}
+library(ggplot2)
 library(rayshader)
 ```
 
+```{r}
+mtplot = ggplot(mtcars) + 
+  geom_point(aes(x = mpg, y = hp, color = cyl)) + 
+  scale_color_continuous(limits = c(0, 8))
 
+par(mfrow = c(1, 2))
+plot_gg(mtplot, width = 3.5, raytrace = FALSE, preview = TRUE)
 
+plot_gg(mtplot, width = 3.5, multicore = TRUE, windowsize = c(800, 800), 
+        zoom = 0.85, phi = 35, theta = 30, sunangle = 225, soliddepth = 0.5)
+```
 
-**Some cool things you can do with rayshader**
-1. https://opentopography.org/blog/creating-2d-and-3d-visualizations-rayshader
-2. https://rallydatajunkie.com/visualising-rally-stages/index.html
-
-**References**
-1. https://www.rayshader.com/
-
+**That's all for the quick examples!**
