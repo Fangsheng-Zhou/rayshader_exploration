@@ -1,10 +1,9 @@
 ---
-title: "GEOG 595 Rayshader Activity by Jasper Zhou"
+title: "GEOG 595 rayshader Activity by Jasper Zhou"
 output: html_notebook
 ---
 
-**Let's check if the required packages are installed.**
-
+**Let's check if the package, rayshader, is installed.**
 ```{r}
 # Function to check and install rayshader if not installed
 check_install_rayshader <- function() {
@@ -16,4 +15,201 @@ check_install_rayshader <- function() {
 check_install_rayshader()
 ```
 
-**Down sample the DEM**
+**Import the required libraries.**
+```{r}
+library(rayshader)
+library(terra)
+library(rgl)
+```
+
+**Where can you obtain DEM data?**
+1. USGS Earth Explorer
+2. Open Topography
+3. National Map Viewer
+...
+
+Note: Highest resolution DEM may be available from state agency. For instance, Washington State Department of Natural Resources (DNR) provides 1m resolution DEMs for free.
+
+```{r}
+# Download & Load the DEM from GitHub
+dem_url <- "https://github.com/Fangsheng-Zhou/rayshader_exploration/raw/refs/heads/main/Example_DEM_Data/USGS_13_n49w122_20230307_SCG.tif"
+dest_file <- "Data/scg_dem.tif"
+
+# Download and save the DEM
+download.file(dem_url, destfile = dest_file, mode = "wb")
+
+# Read the DEM as a raster
+scg_dem <- rast(dest_file)
+
+# Plot the DEM as a grayscale image to verify
+plot(scg_dem, main = "South Cascade Glacier DEM")
+```
+
+**Create a 2D plot of the DEM using rayshader.**
+```{r}
+# Convert to rayshader-compatible matrix
+elmat <- raster_to_matrix(scg_dem)
+
+# Apply shading and plot the 2D rayshader map
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  plot_map()
+```
+
+**Adding some shadow**
+```{r}
+# Apply texture and simple ray-traced shadows
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  add_shadow(ray_shade(elmat), 0.5) %>% # Adds realistic lighting effects
+  plot_map()
+```
+
+**Plot it in 3D**
+```{r}
+# Render in 3D 
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  add_shadow(ray_shade(elmat), 0.5) %>% # Adds realistic lighting effects
+  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 0.75, phi = 45, windowsize = c(1000, 800))
+
+# Pause briefly before taking a snapshot
+Sys.sleep(3)
+
+# Save a high-quality snapshot
+render_snapshot("Data/SCG_3D.png")
+```
+
+**Create a 3D animation**
+Note: Don't close the rgl window until it finished rendering.
+```{r}
+# Render in 3D 
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  add_shadow(ray_shade(elmat), 0.5) %>% # Adds realistic lighting effects
+  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 0.75, phi = 45, windowsize = c(1000, 800))
+
+# Pause briefly before taking a snapshot
+Sys.sleep(3)
+
+render_movie(
+  filename = "Data/SCG_3D_animation.mp4",  # Save as .mp4
+  frames = 180,   # Number of frames (adjust for smoother animation)
+  phi = 45,       # Camera angle
+  theta = seq(0, 360, length.out = 180),  # Rotate 360 degrees
+  zoom = 0.75
+)
+```
+
+**Add in a scale bar**
+```{r}
+# Render in 3D 
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  add_shadow(ray_shade(elmat), 0.5) %>% # Adds realistic lighting effects
+  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 0.75, phi = 45, windowsize = c(1000, 800))
+
+render_camera(fov = 0, theta = 200, zoom = 0.85, phi = 45)
+
+# Add a scale bar
+render_scalebar(limits=c(0, 500, 1000),label_unit = "m",position = "W", y=50,
+                scale_length = c(0.33,1))
+```
+
+**Add in a compass after scale bar**
+```{r}
+# Render in 3D 
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  add_shadow(ray_shade(elmat), 0.5) %>% # Adds realistic lighting effects
+  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 0.75, phi = 45, windowsize = c(1000, 800))
+
+render_camera(fov = 0, theta = 200, zoom = 0.85, phi = 45)
+
+# Add a scale bar
+render_scalebar(limits=c(0, 500, 1000),label_unit = "m",position = "W", y=50,
+                scale_length = c(0.33,1))
+
+# Add a compass
+render_compass(position = "E")
+
+Sys.sleep(1)
+
+# Save a high-quality snapshot
+render_snapshot("Data/SCG_3D_scale_compass.png")
+```
+
+**Getting little artsy - depth of field**
+Note: This will take a long time to render. 
+```{r}
+# Render in 3D 
+elmat %>%
+  sphere_shade(texture = "desert") %>%
+  add_shadow(ray_shade(elmat), 0.5) %>% # Adds realistic lighting effects
+  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 0.75, phi = 45, windowsize = c(1000, 800))
+
+render_camera(fov = 0, theta = 200, zoom = 0.45, phi = 45)
+
+render_depth(focallength = 600, clear = TRUE)
+
+Sys.sleep(1)
+
+# Save a high-quality snapshot
+render_snapshot("Data/SCG_3D_scale_DOF.png")
+```
+
+**Let's do a 3D plot.**
+```{r}
+library(ggplot2)
+library(rayshader)
+```
+
+**2D vs. 3D plots, side by side comparison**
+```{r}
+# Exmaple 1
+# Use the built-in volcano dataset
+data(volcano)
+
+# Convert the volcano matrix to a data frame for ggplot2
+volcano_df <- reshape2::melt(volcano)
+
+# Create a ggplot2 heatmap
+gg <- ggplot(volcano_df, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = terrain.colors(10)) +
+  theme_minimal() +
+  labs(title = "Volcano Topography", x = "X", y = "Y", fill = "Height")
+
+# Display the ggplot2 plot
+plot(gg)
+
+# Convert the ggplot2 plot to a 3D plot
+plot_gg(gg, width = 5, height = 5, scale = 300, multicore = TRUE, windowsize = c(1000, 800))
+```
+
+```{r}
+# Example 2
+# Use the built-in airquality dataset
+data(airquality)
+
+# Create a ggplot2 scatter plot
+gg <- ggplot(airquality, aes(x = Temp, y = Wind, color = Ozone)) +
+  geom_point(size = 3) +  # Scatter plot points
+  scale_color_gradientn(colors = heat.colors(10)) +  # Color gradient
+  theme_minimal() +
+  labs(title = "Airquality Dataset: Temperature vs Wind", 
+       x = "Temperature", y = "Wind", color = "Ozone")
+
+# Display the 2D ggplot
+print(gg)
+
+# Convert the ggplot2 plot to a 3D plot
+plot_gg(gg, width = 5, height = 5, scale = 300, multicore = TRUE, windowsize = c(1000, 800))
+```
+
+**Some cool things you can do with rayshader**
+1. https://opentopography.org/blog/creating-2d-and-3d-visualizations-rayshader
+2. https://rallydatajunkie.com/visualising-rally-stages/index.html
+
+**References**
+Morgan-Wall T (2025). rayshader: Create Maps and Visualize Data in 2D and 3D. R package version 0.38.11, https://github.com/tylermorganwall/rayshader, https://www.rayshader.com.
