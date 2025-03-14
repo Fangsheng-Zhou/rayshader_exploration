@@ -15,7 +15,7 @@ The goal of this project is to:
 - **Glacier visualization from DEM data**
 
 ## Data
-The example dataset (`example_data.zip`) contains **spatial data** used in this project, including a DEM of South Cascade Glacier. Users can download and extract it to follow along with the provided R scripts.
+The example dataset store in the Example_DEM_Data folder. It contains **spatial data** used in this project, including a DEM of South Cascade Glacier. Users can download and extract it to follow along with the provided R scripts.
 
 ## Getting Started
 To use this project, clone the repository and run the R scripts inside an R environment.
